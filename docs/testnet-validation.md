@@ -3,8 +3,8 @@
 This is the M1 milestone of the [val-bittensor roadmap](../.specs/project/ROADMAP.md): the inside-out learning loop. You'll register a personal subnet on Bittensor testnet, run a validator and a miner under it, and observe the producer-side mechanics end-to-end.
 
 It adapts the upstream [docs/running_on_testnet.md](running_on_testnet.md) with this project's specifics:
-- Runtime is the **WSL Ubuntu venv** at `/home/spectrum/val-bittensor-venv` (Python 3.11.15, bittensor 10.3.0).
-- Wallet files live on the WSL side at `~/.bittensor/wallets/` — that's `/home/spectrum/.bittensor/wallets/` on disk.
+- Runtime is the **WSL Ubuntu venv** at `$HOME/val-bittensor-venv` (Python 3.11.15, bittensor 10.3.0).
+- Wallet files live on the WSL side at `~/.bittensor/wallets/` — that's `$HOME/.bittensor/wallets/` on disk.
 - All `btcli` and `python neurons/*` commands declared in [`.adp/harness.yaml`](../.adp/harness.yaml) under `actions:` (always-ask zone).
 - An integration test (`tests/integration/test_testnet.py`, skipped by default) verifies each milestone you reach.
 
@@ -34,15 +34,15 @@ Per the upstream doc, you need **three** identities: subnet owner, validator, mi
 
 ```bash
 # Owner wallet — coldkey only. This wallet owns the subnet you create.
-wsl bash -c "/home/spectrum/val-bittensor-venv/bin/btcli wallet new_coldkey --wallet.name owner"
+wsl bash -c "$HOME/val-bittensor-venv/bin/btcli wallet new_coldkey --wallet.name owner"
 
 # Validator wallet — coldkey + hotkey
-wsl bash -c "/home/spectrum/val-bittensor-venv/bin/btcli wallet new_coldkey --wallet.name validator"
-wsl bash -c "/home/spectrum/val-bittensor-venv/bin/btcli wallet new_hotkey  --wallet.name validator --wallet.hotkey default"
+wsl bash -c "$HOME/val-bittensor-venv/bin/btcli wallet new_coldkey --wallet.name validator"
+wsl bash -c "$HOME/val-bittensor-venv/bin/btcli wallet new_hotkey  --wallet.name validator --wallet.hotkey default"
 
 # Miner wallet — coldkey + hotkey
-wsl bash -c "/home/spectrum/val-bittensor-venv/bin/btcli wallet new_coldkey --wallet.name miner"
-wsl bash -c "/home/spectrum/val-bittensor-venv/bin/btcli wallet new_hotkey  --wallet.name miner --wallet.hotkey default"
+wsl bash -c "$HOME/val-bittensor-venv/bin/btcli wallet new_coldkey --wallet.name miner"
+wsl bash -c "$HOME/val-bittensor-venv/bin/btcli wallet new_hotkey  --wallet.name miner --wallet.hotkey default"
 ```
 
 Declared actions: `btcli_wallet_new_coldkey`, `btcli_wallet_new_hotkey`.
@@ -54,7 +54,7 @@ Each command prompts for:
 Verify wallets are on disk:
 
 ```bash
-wsl ls -la /home/spectrum/.bittensor/wallets/
+wsl ls -la $HOME/.bittensor/wallets/
 # Expected: owner/  validator/  miner/
 ```
 
@@ -71,7 +71,7 @@ You need at least **100 test TAO** in the **owner** wallet for subnet creation, 
 Verify you received it:
 
 ```bash
-wsl bash -c "/home/spectrum/val-bittensor-venv/bin/btcli wallet overview --wallet.name owner --subtensor.network test"
+wsl bash -c "$HOME/val-bittensor-venv/bin/btcli wallet overview --wallet.name owner --subtensor.network test"
 ```
 
 Look for `Wallet balance: τ150.0` (or similar non-zero number) at the bottom.
@@ -81,7 +81,7 @@ Look for `Wallet balance: τ150.0` (or similar non-zero number) at the bottom.
 ## 3. 💸 Create your subnet (~100 test TAO)
 
 ```bash
-wsl bash -c "/home/spectrum/val-bittensor-venv/bin/btcli subnet create --subtensor.network test --wallet.name owner"
+wsl bash -c "$HOME/val-bittensor-venv/bin/btcli subnet create --subtensor.network test --wallet.name owner"
 ```
 
 Declared action: `btcli_subnet_create_test`.
@@ -97,7 +97,7 @@ Verify with the integration test (sets up the env then asserts metagraph loads):
 
 ```bash
 BT_TESTNET_WALLET=owner BT_TESTNET_NETUID=<N> \
-  wsl bash -c "/home/spectrum/val-bittensor-venv/bin/python -m pytest tests/integration -v -k metagraph_loads"
+  wsl bash -c "$HOME/val-bittensor-venv/bin/python -m pytest tests/integration -v -k metagraph_loads"
 # Expected: 1 passed
 ```
 
@@ -109,10 +109,10 @@ Each registration costs a small amount of test TAO (recycled — you get most of
 
 ```bash
 # Validator hotkey
-wsl bash -c "/home/spectrum/val-bittensor-venv/bin/btcli subnet register --netuid <N> --subtensor.network test --wallet.name validator --wallet.hotkey default"
+wsl bash -c "$HOME/val-bittensor-venv/bin/btcli subnet register --netuid <N> --subtensor.network test --wallet.name validator --wallet.hotkey default"
 
 # Miner hotkey
-wsl bash -c "/home/spectrum/val-bittensor-venv/bin/btcli subnet register --netuid <N> --subtensor.network test --wallet.name miner --wallet.hotkey default"
+wsl bash -c "$HOME/val-bittensor-venv/bin/btcli subnet register --netuid <N> --subtensor.network test --wallet.name miner --wallet.hotkey default"
 ```
 
 Declared action: `btcli_subnet_register_test`.
@@ -123,11 +123,11 @@ Verify both registrations with the integration test:
 
 ```bash
 BT_TESTNET_WALLET=validator BT_TESTNET_NETUID=<N> \
-  wsl bash -c "/home/spectrum/val-bittensor-venv/bin/python -m pytest tests/integration -v -k wallet_registered"
+  wsl bash -c "$HOME/val-bittensor-venv/bin/python -m pytest tests/integration -v -k wallet_registered"
 # Expected: 1 passed (validator)
 
 BT_TESTNET_WALLET=miner BT_TESTNET_NETUID=<N> \
-  wsl bash -c "/home/spectrum/val-bittensor-venv/bin/python -m pytest tests/integration -v -k wallet_registered"
+  wsl bash -c "$HOME/val-bittensor-venv/bin/python -m pytest tests/integration -v -k wallet_registered"
 # Expected: 1 passed (miner)
 ```
 
@@ -140,7 +140,7 @@ You can also confirm via `btcli wallet overview --wallet.name validator --subten
 The miner serves an axon and waits for validator queries. Open a dedicated terminal for it.
 
 ```bash
-wsl bash -c "cd /mnt/c/Users/User/Documents/Claude/val-bittensor && /home/spectrum/val-bittensor-venv/bin/python neurons/miner.py --netuid <N> --subtensor.network test --wallet.name miner --wallet.hotkey default --logging.debug"
+wsl bash -c "cd /mnt/c/Users/User/Documents/Claude/val-bittensor && $HOME/val-bittensor-venv/bin/python neurons/miner.py --netuid <N> --subtensor.network test --wallet.name miner --wallet.hotkey default --logging.debug"
 ```
 
 Declared action: `run_miner_testnet`.
@@ -167,7 +167,7 @@ The validator queries miners every step, scores responses, and sets weights on c
 For your first run you can disable the validator's own axon serving (skips one chain interaction) using `--neuron.axon_off`:
 
 ```bash
-wsl bash -c "cd /mnt/c/Users/User/Documents/Claude/val-bittensor && /home/spectrum/val-bittensor-venv/bin/python neurons/validator.py --netuid <N> --subtensor.network test --wallet.name validator --wallet.hotkey default --neuron.axon_off --logging.debug"
+wsl bash -c "cd /mnt/c/Users/User/Documents/Claude/val-bittensor && $HOME/val-bittensor-venv/bin/python neurons/validator.py --netuid <N> --subtensor.network test --wallet.name validator --wallet.hotkey default --neuron.axon_off --logging.debug"
 ```
 
 Declared action: `run_validator_testnet`.
@@ -205,7 +205,7 @@ That last line is the key milestone: your validator just submitted weights to te
 While the validator runs, in a third terminal check that emissions / weights are flowing:
 
 ```bash
-wsl bash -c "/home/spectrum/val-bittensor-venv/bin/btcli wallet overview --wallet.name validator --subtensor.network test"
+wsl bash -c "$HOME/val-bittensor-venv/bin/btcli wallet overview --wallet.name validator --subtensor.network test"
 ```
 
 Look for:
@@ -215,7 +215,7 @@ Look for:
 
 For the miner:
 ```bash
-wsl bash -c "/home/spectrum/val-bittensor-venv/bin/btcli wallet overview --wallet.name miner --subtensor.network test"
+wsl bash -c "$HOME/val-bittensor-venv/bin/btcli wallet overview --wallet.name miner --subtensor.network test"
 ```
 
 Look for `INCENTIVE > 0` once your validator scores it.
@@ -227,8 +227,8 @@ Look for `INCENTIVE > 0` once your validator scores it.
 Per the upstream doc, registering on the root network and setting subnet weights makes emissions actually distribute:
 
 ```bash
-wsl bash -c "/home/spectrum/val-bittensor-venv/bin/btcli root register --subtensor.network test"
-wsl bash -c "/home/spectrum/val-bittensor-venv/bin/btcli root weights --subtensor.network test"
+wsl bash -c "$HOME/val-bittensor-venv/bin/btcli root register --subtensor.network test"
+wsl bash -c "$HOME/val-bittensor-venv/bin/btcli root weights --subtensor.network test"
 ```
 
 This is more about understanding the dTAO emission pathway than required for the validator to function. Skip for first pass; revisit when M3 (Alpha→TAO economics) work begins.
@@ -261,7 +261,7 @@ These concepts directly inform M2 (subnet evaluator) and M3 (Alpha→TAO economi
 
 ## Troubleshooting
 
-**`btcli: command not found`** — the WSL venv isn't sourced. Use the full path: `/home/spectrum/val-bittensor-venv/bin/btcli`.
+**`btcli: command not found`** — the WSL venv isn't sourced. Use the full path: `$HOME/val-bittensor-venv/bin/btcli`.
 
 **`AttributeError: module 'bittensor' has no attribute '<lower>'`** — bittensor 10 API drift; the inherited template still has a lowercase symbol somewhere. We caught most in M0 + the M1 audit; if you find a new one, file a quick fix and run the test sensor.
 
