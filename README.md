@@ -1,213 +1,179 @@
-<div align="center">
+# val-bittensor
 
-# **Bittensor Subnet Template** <!-- omit in toc -->
-[![Discord Chat](https://img.shields.io/discord/308323056592486420.svg)](https://discord.gg/bittensor)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) 
+Validator learning workbench — a Kubernetes-deployed Bittensor validator built on the opentensor subnet template. Used to learn and test validator ops, incentive strategy, and emission mechanics on testnet.
 
----
-
-## The Incentivized Internet <!-- omit in toc -->
-
-[Discord](https://discord.gg/bittensor) • [Network](https://taostats.io/) • [Research](https://bittensor.com/whitepaper)
-</div>
-
----
-- [Quickstarter template](#quickstarter-template)
-- [Introduction](#introduction)
-  - [Example](#example)
-- [Installation](#installation)
-  - [Before you proceed](#before-you-proceed)
-  - [Install](#install)
-- [Writing your own incentive mechanism](#writing-your-own-incentive-mechanism)
-- [Writing your own subnet API](#writing-your-own-subnet-api)
-- [Subnet Links](#subnet-links)
-- [License](#license)
-
----
-## Quickstarter template
-
-This template contains all the required installation instructions, scripts, and files and functions for:
-- Building Bittensor subnets.
-- Creating custom incentive mechanisms and running these mechanisms on the subnets. 
-
-In order to simplify the building of subnets, this template abstracts away the complexity of the underlying blockchain and other boilerplate code. While the default behavior of the template is sufficient for a simple subnet, you should customize the template in order to meet your specific requirements.
----
-
-## Introduction
-
-**IMPORTANT**: If you are new to Bittensor subnets, read this section before proceeding to [Installation](#installation) section. 
-
-The Bittensor blockchain hosts multiple self-contained incentive mechanisms called **subnets**. Subnets are playing fields in which:
-- Subnet miners who produce value, and
-- Subnet validators who produce consensus
-
-determine together the proper distribution of TAO for the purpose of incentivizing the creation of value, i.e., generating digital commodities, such as intelligence or data. 
-
-Each subnet consists of:
-- Subnet miners and subnet validators.
-- A protocol using which the subnet miners and subnet validators interact with one another. This protocol is part of the incentive mechanism.
-- The Bittensor API using which the subnet miners and subnet validators interact with Bittensor's onchain consensus engine [Yuma Consensus](https://bittensor.com/documentation/validating/yuma-consensus). The Yuma Consensus is designed to drive these actors: subnet validators and subnet miners, into agreement on who is creating value and what that value is worth. 
-
-This starter template is split into three primary files. To write your own incentive mechanism, you should edit these files. These files are:
-1. `template/protocol.py`: Contains the definition of the protocol used by subnet miners and subnet validators.
-2. `neurons/miner.py`: Script that defines the subnet miner's behavior, i.e., how the subnet miner responds to requests from subnet validators.
-3. `neurons/validator.py`: This script defines the subnet validator's behavior, i.e., how the subnet validator requests information from the subnet miners and determines the scores.
-
-### Example
-
-The Bittensor Subnet 1 for Text Prompting is built using this template. See [prompting](https://github.com/macrocosm-os/prompting) for how to configure the files and how to add monitoring and telemetry and support multiple miner types. Also see this Subnet 1 in action on [Taostats](https://taostats.io/subnets/netuid-1/) explorer.
+> Upstream: [opentensor/bittensor-subnet-template](https://github.com/opentensor/bittensor-subnet-template)  
+> Docs: [docs.learnbittensor.org](https://docs.learnbittensor.org)
 
 ---
 
-## Installation
+## Bittensor TL;DR
 
-### Before you proceed
-Before you proceed with the installation of the subnet, note the following: 
+### The Network
 
-- Use these instructions to run your subnet locally for your development and testing, or on Bittensor testnet or on Bittensor mainnet. 
-- **IMPORTANT**: We **strongly recommend** that you first run your subnet locally and complete your development and testing before running the subnet on Bittensor testnet. Furthermore, make sure that you next run your subnet on Bittensor testnet before running it on the Bittensor mainnet.
-- You can run your subnet either as a subnet owner, or as a subnet validator or as a subnet miner. 
-- **IMPORTANT:** Make sure you are aware of the minimum compute requirements for your subnet. See the [Minimum compute YAML configuration](./min_compute.yml).
-- Note that installation instructions differ based on your situation: For example, installing for local development and testing will require a few additional steps compared to installing for testnet. Similarly, installation instructions differ for a subnet owner vs a validator or a miner. 
+Bittensor is a decentralized protocol that creates a marketplace for digital commodities — AI compute, data, inference, storage, etc. Participants are incentivized with **TAO**, the native token, based on the value they contribute to the network.
 
-### Install
+### TAO and Alpha
 
-- **Running locally**: Follow the step-by-step instructions described in this section: [Running Subnet Locally](./docs/running_on_staging.md).
-- **Running on Bittensor testnet**: Follow the step-by-step instructions described in this section: [Running on the Test Network](./docs/running_on_testnet.md).
-- **Running on Bittensor mainnet**: Follow the step-by-step instructions described in this section: [Running on the Main Network](./docs/running_on_mainnet.md).
+| Token | What it is |
+|-------|-----------|
+| **TAO (τ)** | The root token. Staked by validators, distributed by Yuma Consensus, tradeable. |
+| **Alpha (α)** | Subnet-specific token introduced in dTAO. Each subnet has its own Alpha token. Validators and miners earn Alpha; Alpha can be exchanged back to TAO. |
 
----
+Emissions flow: each block mints TAO → distributed to subnets proportional to stake → split between validators and miners within each subnet.
 
-## Writing your own incentive mechanism
+### Subnets
 
-As described in [Quickstarter template](#quickstarter-template) section above, when you are ready to write your own incentive mechanism, update this template repository by editing the following files. The code in these files contains detailed documentation on how to update the template. Read the documentation in each of the files to understand how to update the template. There are multiple **TODO**s in each of the files identifying sections you should update. These files are:
-- `template/protocol.py`: Contains the definition of the wire-protocol used by miners and validators.
-- `neurons/miner.py`: Script that defines the miner's behavior, i.e., how the miner responds to requests from validators.
-- `neurons/validator.py`: This script defines the validator's behavior, i.e., how the validator requests information from the miners and determines the scores.
-- `template/forward.py`: Contains the definition of the validator's forward pass.
-- `template/reward.py`: Contains the definition of how validators reward miner responses.
+A **subnet** (netuid) is a self-contained market with its own incentive mechanism. Think of it as a competition arena:
 
-In addition to the above files, you should also update the following files:
-- `README.md`: This file contains the documentation for your project. Update this file to reflect your project's documentation.
-- `CONTRIBUTING.md`: This file contains the instructions for contributing to your project. Update this file to reflect your project's contribution guidelines.
-- `template/__init__.py`: This file contains the version of your project.
-- `setup.py`: This file contains the metadata about your project. Update this file to reflect your project's metadata.
-- `docs/`: This directory contains the documentation for your project. Update this directory to reflect your project's documentation.
+- Subnet owner defines what "good work" looks like (the protocol)
+- Miners compete to produce that work
+- Validators assess the miners and set weights
+- Yuma Consensus converts those weights into TAO/Alpha emissions
 
-__Note__
-The `template` directory should also be renamed to your project name.
----
+There are 64 subnets on mainnet. Testnet has separate netuids for development.
 
-# Writing your own subnet API
-To leverage the abstract `SubnetsAPI` in Bittensor, you can implement a standardized interface. This interface is used to interact with the Bittensor network and can be used by a client to interact with the subnet through its exposed axons.
-
-What does Bittensor communication entail? Typically two processes, (1) preparing data for transit (creating and filling `synapse`s) and (2), processing the responses received from the `axon`(s).
-
-This protocol uses a handler registry system to associate bespoke interfaces for subnets by implementing two simple abstract functions:
-- `prepare_synapse`
-- `process_responses`
-
-These can be implemented as extensions of the generic `SubnetsAPI` interface.  E.g.:
-
-
-This is abstract, generic, and takes(`*args`, `**kwargs`) for flexibility. See the extremely simple base class:
-```python
-class SubnetsAPI(ABC):
-    def __init__(self, wallet: "bt.wallet"):
-        self.wallet = wallet
-        self.dendrite = bt.dendrite(wallet=wallet)
-
-    async def __call__(self, *args, **kwargs):
-        return await self.query_api(*args, **kwargs)
-
-    @abstractmethod
-    def prepare_synapse(self, *args, **kwargs) -> Any:
-        """
-        Prepare the synapse-specific payload.
-        """
-        ...
-
-    @abstractmethod
-    def process_responses(self, responses: List[Union["bt.Synapse", Any]]) -> Any:
-        """
-        Process the responses from the network.
-        """
-        ...
+### Roles
 
 ```
-
-
-Here is a toy example:
-
-```python
-from bittensor.subnets import SubnetsAPI
-from MySubnet import MySynapse
-
-class MySynapseAPI(SubnetsAPI):
-    def __init__(self, wallet: "bt.wallet"):
-        super().__init__(wallet)
-        self.netuid = 99
-
-    def prepare_synapse(self, prompt: str) -> MySynapse:
-        # Do any preparatory work to fill the synapse
-        data = do_prompt_injection(prompt)
-
-        # Fill the synapse for transit
-        synapse = StoreUser(
-            messages=[data],
-        )
-        # Send it along
-        return synapse
-
-    def process_responses(self, responses: List[Union["bt.Synapse", Any]]) -> str:
-        # Look through the responses for information required by your application
-        for response in responses:
-            if response.dendrite.status_code != 200:
-                continue
-            # potentially apply post processing
-            result_data = postprocess_data_from_response(response)
-        # return data to the client
-        return result_data
+Coldkey (wallet root, offline)
+└── Hotkey (signs daily operations, registered on-chain)
+    ├── Validator — queries miners, sets weights, earns emissions
+    └── Miner — serves responses, scored by validators
 ```
 
-You can use a subnet API to the registry by doing the following:
-1. Download and install the specific repo you want
-1. Import the appropriate API handler from bespoke subnets
-1. Make the query given the subnet specific API
+| Role | Responsibility | Earns |
+|------|---------------|-------|
+| **Validator** | Queries miners, scores responses, sets weights on-chain | ~41% of subnet emissions |
+| **Miner** | Responds to validator queries with useful work | ~41% of subnet emissions |
+| **Subnet owner** | Designs the incentive mechanism, registers the subnet | ~18% of subnet emissions |
 
+### Keys
 
+- **Coldkey**: Root wallet key. Holds TAO. Never goes online. Used for registration and fund transfers.
+- **Hotkey**: Day-to-day key. Registered on-chain per subnet. Signs weight transactions and axon serving.
+- **Child hotkeys**: A validator can delegate their stake to child hotkeys — useful for running multiple validator instances or separating signing duties.
 
-# Subnet Links
-In order to see real-world examples of subnets in-action, see the `subnet_links.py` document or access them from inside the `template` package by:
+### Metagraph
+
+The **metagraph** is the on-chain snapshot of a subnet's state: all registered hotkeys, their axon endpoints, stake amounts, and the most recent weights. Validators sync the metagraph each epoch to discover miners and check network state.
+
 ```python
-import template
-template.SUBNET_LINKS
-[{'name': 'sn0', 'url': ''},
- {'name': 'sn1', 'url': 'https://github.com/opentensor/prompting/'},
- {'name': 'sn2', 'url': 'https://github.com/bittranslateio/bittranslate/'},
- {'name': 'sn3', 'url': 'https://github.com/gitphantomman/scraping_subnet/'},
- {'name': 'sn4', 'url': 'https://github.com/manifold-inc/targon/'},
-...
-]
+import bittensor as bt
+meta = bt.metagraph(netuid=1, network="test")
+# meta.hotkeys, meta.axons, meta.stake, meta.weights
 ```
+
+### Weights and Yuma Consensus
+
+Each validator assigns weights `[0.0, 1.0]` to miners based on response quality. **Yuma Consensus** aggregates all validator weight vectors (weighted by validator stake) to produce a canonical ranking. That ranking determines how emissions are split among miners each epoch.
+
+Key property: a single validator can't manipulate rankings unless they control enough stake to override the consensus.
+
+### Axon and Dendrite
+
+- **Axon**: The miner's server. Listens for incoming queries, serves responses.
+- **Dendrite**: The validator's client. Sends queries to miner axons, collects responses, applies a timeout.
+
+```
+Validator (Dendrite) ──query──► Miner (Axon)
+                     ◄─response─
+```
+
+### Epoch Timing
+
+| Event | Typical frequency |
+|-------|------------------|
+| Block time | ~12 seconds |
+| Weight-setting (tempo) | Every ~360 blocks (~72 min) |
+| Metagraph resync | Every ~100 blocks (~20 min) |
+
+---
+
+## This Repo
+
+### Components
+
+| Component | What it does |
+|-----------|-------------|
+| `neurons/validator.py` | Validator neuron — queries miners, scores responses, sets weights |
+| `neurons/miner.py` | Miner neuron — serves Dummy protocol responses |
+| `strategy/scheduler.py` | Strategy scheduler — runs automated weight/economics decisions on a cron |
+| `template/` | Base protocol, reward logic, utilities |
+| `helm-charts/` | Kubernetes Helm chart for k3s/ArgoCD deployment |
+
+### Config
+
+Key env vars and CLI args:
+
+```bash
+# Wallet
+--wallet.name testnet-validator
+--wallet.hotkey default
+
+# Subnet
+--netuid 1
+--subtensor.network test   # "test" | "finney" (mainnet)
+
+# Axon
+--axon.port 8091
+
+# Validator tuning
+--neuron.sample_size 10           # miners queried per step
+--neuron.moving_average_alpha 0.1 # EMA smoothing for scores
+```
+
+### Deploy (k3s + ArgoCD)
+
+```bash
+# Helm lint
+helm lint helm-charts/charts/val-bittensor
+
+# Dry run
+helm template bittensor-testnet helm-charts/charts/val-bittensor \
+  -f helm-charts/charts/val-bittensor/values.yaml
+
+# ArgoCD sync
+argocd app sync bittensor-testnet --grpc-web
+```
+
+### Development
+
+```bash
+# Install
+pip install -r requirements.txt
+
+# Sensors
+mypy --config-file mypy.ini || true
+ruff check .
+pytest --tb=short -q --ignore=tests/integration/
+
+# Run validator locally (testnet)
+python neurons/validator.py \
+  --wallet.name testnet-validator \
+  --wallet.hotkey default \
+  --netuid 1 \
+  --subtensor.network test \
+  --logging.debug
+```
+
+### CI/CD
+
+GitHub Actions (`.github/workflows/build-and-deploy.yaml`):
+1. **sensors** — mypy, ruff, pytest, pip-audit, bandit, detect-secrets
+2. **build** — Docker image → GHCR (`ghcr.io/0xpuncker/val-bittensor:<branch>-<sha>`)
+3. **update_k8s_manifests** — rewrites `k8s/bittensor-testnet.yaml` image tag → triggers ArgoCD auto-sync
+
+---
+
+## References
+
+- [Bittensor docs](https://docs.bittensor.com)
+- [Learn Bittensor](https://docs.learnbittensor.org)
+- [Yuma Consensus whitepaper](https://bittensor.com/whitepaper)
+- [Taostats explorer](https://taostats.io)
+- [opentensor/bittensor](https://github.com/opentensor/bittensor)
 
 ## License
-This repository is licensed under the MIT License.
-```text
-# The MIT License (MIT)
-# Copyright © 2024 Opentensor Foundation
 
-# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
-# documentation files (the “Software”), to deal in the Software without restriction, including without limitation
-# the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
-# and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-# The above copyright notice and this permission notice shall be included in all copies or substantial portions of
-# the Software.
-
-# THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
-# THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-# OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-# DEALINGS IN THE SOFTWARE.
-```
+MIT — see [LICENSE](LICENSE)
