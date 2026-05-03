@@ -8,7 +8,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/0xPuncker/lab-tao.git
+    repoURL: https://github.com/0xPuncker/lab-bittensor.git
     targetRevision: main
     path: k8s
   destination:
