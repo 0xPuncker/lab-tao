@@ -5,6 +5,10 @@ Validator learning workbench — a Kubernetes-deployed Bittensor validator built
 > Upstream: [opentensor/bittensor-subnet-template](https://github.com/opentensor/bittensor-subnet-template)  
 > Docs: [docs.learnbittensor.org](https://docs.learnbittensor.org)
 
+<p align="center">
+  <img src="https://www.bitnovo.com/blog/wp-content/uploads/2025/11/photo_2025-11-10-06.25.03.jpeg" alt="Bittensor TAO" width="720" />
+</p>
+
 ---
 
 ## Bittensor TL;DR
