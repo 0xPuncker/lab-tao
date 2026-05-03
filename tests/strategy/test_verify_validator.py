@@ -46,8 +46,8 @@ def _metagraph(
     hotkeys: list[str],
     axons: list[_FakeAxon] | None = None,
     stakes: list[float] | None = None,
-    ranks: list[float] | None = None,
-    trusts: list[float] | None = None,
+    incentives: list[float] | None = None,
+    consensuses: list[float] | None = None,
     vtrusts: list[float] | None = None,
     permits: list[bool] | None = None,
     last_updates: list[int] | None = None,
@@ -55,8 +55,8 @@ def _metagraph(
     n = len(hotkeys)
     axons = axons or [_FakeAxon() for _ in range(n)]
     stakes = stakes or [0.0] * n
-    ranks = ranks or [0.0] * n
-    trusts = trusts or [0.0] * n
+    incentives = incentives or [0.0] * n
+    consensuses = consensuses or [0.0] * n
     vtrusts = vtrusts or [0.0] * n
     permits = permits or [False] * n
     last_updates = last_updates or [0] * n
@@ -68,8 +68,8 @@ def _metagraph(
     m.hotkeys = hotkeys
     m.axons = axons
     m.S = _FakeTensor(stakes)
-    m.R = _FakeTensor(ranks)
-    m.T = _FakeTensor(trusts)
+    m.I = _FakeTensor(incentives)   # bittensor v10: incentive (was R/rank)
+    m.C = _FakeTensor(consensuses)  # bittensor v10: consensus (was T/trust)
     m.Tv = _FakeTensor(vtrusts)
     m.validator_permit = permits
     m.last_update = last_updates
@@ -107,8 +107,8 @@ def test_registered_returns_status():
         hotkeys=[HOTKEY],
         axons=[axon],
         stakes=[500.0],
-        ranks=[0.12345],
-        trusts=[0.99],
+        incentives=[0.12345],
+        consensuses=[0.99],
         vtrusts=[0.88],
         permits=[True],
         last_updates=[1234567],
@@ -121,8 +121,8 @@ def test_registered_returns_status():
     assert status.axon_ip == "10.0.0.1"
     assert status.axon_port == 8091
     assert status.stake_tao == pytest.approx(500.0)
-    assert status.rank == pytest.approx(0.12345)
-    assert status.trust == pytest.approx(0.99)
+    assert status.incentive == pytest.approx(0.12345)
+    assert status.consensus == pytest.approx(0.99)
     assert status.validator_trust == pytest.approx(0.88)
     assert status.validator_permit is True
     assert status.last_update_block == 1234567
@@ -158,8 +158,8 @@ def test_render_status_no_crash(capsys):
         axon_ip="1.2.3.4",
         axon_port=8091,
         stake_tao=100.0,
-        rank=0.5,
-        trust=0.9,
+        incentive=0.5,
+        consensus=0.9,
         validator_trust=0.8,
         validator_permit=True,
         last_update_block=9999,
@@ -177,8 +177,8 @@ def test_write_json(tmp_path):
         axon_ip="1.2.3.4",
         axon_port=8091,
         stake_tao=250.0,
-        rank=0.1,
-        trust=0.95,
+        incentive=0.1,
+        consensus=0.95,
         validator_trust=0.75,
         validator_permit=False,
         last_update_block=5000,

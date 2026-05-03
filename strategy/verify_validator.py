@@ -28,11 +28,18 @@ if TYPE_CHECKING:
 log = logging.getLogger("strategy.verify_validator")
 
 TAOSWAP_EXPLORE = "https://taoswap.org/explore"
+TAOSTATS_TESTNET = "https://x.taostats.io"
 
 
 @dataclass
 class ValidatorStatus:
-    """On-chain status for one validator hotkey on a subnet."""
+    """On-chain status for one validator hotkey on a subnet.
+
+    Field names match bittensor v10 metagraph tensor names:
+    - incentive (meta.I) replaces the v9 rank (meta.R)
+    - consensus (meta.C) replaces the v9 trust (meta.T)
+    - validator_trust (meta.Tv) unchanged
+    """
 
     hotkey: str
     netuid: int
@@ -41,8 +48,8 @@ class ValidatorStatus:
     axon_ip: str
     axon_port: int
     stake_tao: float
-    rank: float
-    trust: float
+    incentive: float
+    consensus: float
     validator_trust: float
     validator_permit: bool
     last_update_block: int
@@ -79,9 +86,21 @@ def fetch_validator_status(
     def _f(val: object) -> float:
         return float(val.item() if hasattr(val, "item") else val)  # type: ignore[union-attr]
 
-    # validator_trust lives at metagraph.Tv in some versions, metagraph.validator_trust in others.
-    vtrust_raw = getattr(metagraph, "Tv", None) or getattr(metagraph, "validator_trust", None)
+    def _get_tensor(obj: object, *attrs: str) -> object:
+        """Return the first attribute that exists on obj (None if none found)."""
+        for attr in attrs:
+            val = getattr(obj, attr, None)
+            if val is not None:
+                return val
+        return None
+
+    # bittensor v10: I=incentive, C=consensus, Tv=validator_trust
+    # bittensor v9:  R=rank,      T=trust,     Tv=validator_trust
+    vtrust_raw = _get_tensor(metagraph, "Tv", "validator_trust")
     vtrust = _f(vtrust_raw[uid]) if vtrust_raw is not None else 0.0
+
+    incentive_raw = _get_tensor(metagraph, "I", "R")
+    consensus_raw = _get_tensor(metagraph, "C", "T")
 
     return ValidatorStatus(
         hotkey=hotkey_ss58,
@@ -91,8 +110,8 @@ def fetch_validator_status(
         axon_ip=axon_ip,
         axon_port=axon_port,
         stake_tao=_f(metagraph.S[uid]),
-        rank=_f(metagraph.R[uid]),
-        trust=_f(metagraph.T[uid]),
+        incentive=_f(incentive_raw[uid]) if incentive_raw is not None else 0.0,
+        consensus=_f(consensus_raw[uid]) if consensus_raw is not None else 0.0,
         validator_trust=vtrust,
         validator_permit=bool(metagraph.validator_permit[uid]),
         last_update_block=int(metagraph.last_update[uid]),
@@ -113,15 +132,20 @@ def render_status(status: ValidatorStatus, console: Console | None = None) -> No
     table.add_row("UID", str(status.uid))
     table.add_row("Axon endpoint", f"{status.axon_ip}:{status.axon_port}")
     table.add_row("Stake (τ)", f"{status.stake_tao:.4f}")
-    table.add_row("Rank", f"{status.rank:.6f}")
-    table.add_row("Trust", f"{status.trust:.6f}")
+    table.add_row("Incentive", f"{status.incentive:.6f}")
+    table.add_row("Consensus", f"{status.consensus:.6f}")
     table.add_row("Validator trust", f"{status.validator_trust:.6f}")
     table.add_row("Validator permit", permit_mark)
     table.add_row("Last update (block)", str(status.last_update_block))
 
     console.print(table)
-    console.print(f"\n[bold]taoswap.org explorer:[/bold] {TAOSWAP_EXPLORE}?netuid={status.netuid}")
-    console.print(f"[bold]Hotkey to search:[/bold]  {status.hotkey}\n")
+    is_testnet = status.network in ("test", "testnet")
+    if is_testnet:
+        console.print(f"\n[bold]taostats testnet explorer:[/bold] {TAOSTATS_TESTNET}/hotkey/{status.hotkey}")
+        console.print(f"[bold]Subnet on testnet:[/bold]  {TAOSTATS_TESTNET}/subnet/{status.netuid}?network=test\n")
+    else:
+        console.print(f"\n[bold]taoswap.org explorer:[/bold] {TAOSWAP_EXPLORE}?netuid={status.netuid}")
+        console.print(f"[bold]Hotkey to search:[/bold]  {status.hotkey}\n")
 
 
 def write_json(status: ValidatorStatus, path: Path) -> None:
