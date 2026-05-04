@@ -5,6 +5,7 @@
 
 import argparse
 import logging
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -22,6 +23,15 @@ DEFAULT_SCHEDULE = {
     "economics_time": "01:00",
     "dry_run": False,
     "log_level": "INFO",
+}
+
+# Env var → config key mapping (env vars override YAML file or defaults)
+_ENV_OVERRIDES = {
+    "SCHEDULE_EVALUATOR_INTERVAL_HOURS": ("evaluator_interval_hours", int),
+    "SCHEDULE_SNAPSHOT_TIME": ("snapshot_time", str),
+    "SCHEDULE_ECONOMICS_TIME": ("economics_time", str),
+    "SCHEDULE_DRY_RUN": ("dry_run", lambda v: v.lower() in ("true", "1", "yes")),
+    "LOG_LEVEL": ("log_level", str),
 }
 
 
@@ -43,7 +53,12 @@ def load_config(config_path: str) -> dict:
         config.update(user_config)
         logger.info(f"Loaded config from {config_path}")
     else:
-        logger.warning(f"Config file not found: {config_path}, using defaults")
+        logger.debug(f"Config file not found: {config_path}, checking env vars")
+
+    # Env vars override YAML file and built-in defaults
+    for env_key, (config_key, converter) in _ENV_OVERRIDES.items():
+        if env_key in os.environ:
+            config[config_key] = converter(os.environ[env_key])
 
     return config
 
@@ -172,15 +187,18 @@ def main() -> None:
 
     args = parser.parse_args()
 
+    # Load configuration first so env vars (incl. LOG_LEVEL) are available
+    config = load_config(args.config)
+
+    # Determine effective log level: CLI arg > env var (via config) > default
+    log_level_str = args.log_level if args.log_level != "INFO" else config.get("log_level", "INFO").upper()
+
     # Configure logging
     logging.basicConfig(
-        level=getattr(logging, args.log_level),
+        level=getattr(logging, log_level_str),
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
-
-    # Load configuration
-    config = load_config(args.config)
     if args.dry_run:
         config["dry_run"] = True
 

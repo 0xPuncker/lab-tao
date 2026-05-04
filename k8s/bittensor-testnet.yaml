@@ -79,7 +79,7 @@ spec:
           - neurons/validator.py
           - --wallet.name
           - testnet-validator
-          - --hotkey
+          - --wallet.hotkey
           - default
           - --netuid
           - "1"
@@ -160,6 +160,147 @@ spec:
       resources:
         requests:
           storage: 10Gi
+
+---
+# Headless Service for miner StatefulSet
+apiVersion: v1
+kind: Service
+metadata:
+  name: bt-miner
+  namespace: bittensor-testnet
+  labels:
+    app.kubernetes.io/name: bt
+    app.kubernetes.io/component: miner
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: bt
+    app.kubernetes.io/component: miner
+  ports: []
+
+---
+# Miner StatefulSet
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: bt-miner
+  namespace: bittensor-testnet
+  labels:
+    app.kubernetes.io/name: bt
+    app.kubernetes.io/component: miner
+spec:
+  serviceName: bt-miner
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: bt
+      app.kubernetes.io/component: miner
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: bt
+        app.kubernetes.io/component: miner
+    spec:
+      serviceAccountName: bt
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        fsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+      - name: miner
+        image: ghcr.io/0xpuncker/lab-bittensor:10.3.0-539e7af
+        imagePullPolicy: Always
+        command:
+          - python
+          - neurons/miner.py
+          - --wallet.name
+          - testnet-validator
+          - --wallet.hotkey
+          - miner
+          - --netuid
+          - "1"
+          - --subtensor.network
+          - test
+          - --axon.port
+          - "8092"
+        resources:
+          limits:
+            cpu: "1"
+            memory: 2Gi
+          requests:
+            cpu: 200m
+            memory: 512Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+          runAsUser: 1000
+        env:
+        - name: HOME
+          value: /home/valbittensor
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        - name: BT_SUBTENSOR_NETWORK
+          value: test
+        - name: BT_NETUID
+          value: "1"
+        livenessProbe:
+          exec:
+            command:
+              - pgrep
+              - -f
+              - python.*neurons/miner.py
+          initialDelaySeconds: 120
+          periodSeconds: 60
+          timeoutSeconds: 30
+          successThreshold: 1
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+              - pgrep
+              - -f
+              - python.*neurons/miner.py
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+        volumeMounts:
+        - name: wallet
+          mountPath: /home/valbittensor/.bittensor/wallets/testnet-validator/coldkey
+          subPath: coldkey
+          readOnly: true
+        - name: wallet
+          mountPath: /home/valbittensor/.bittensor/wallets/testnet-validator/coldkeypub.txt
+          subPath: coldkeypub.txt
+          readOnly: true
+        - name: wallet
+          mountPath: /home/valbittensor/.bittensor/wallets/testnet-validator/hotkeys/miner
+          subPath: hotkey-miner
+          readOnly: true
+        - name: state
+          mountPath: /home/valbittensor/.bittensor/miners
+      volumes:
+      - name: wallet
+        secret:
+          secretName: bt-wallet
+  volumeClaimTemplates:
+  - metadata:
+      name: state
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 5Gi
 
 ---
 # PVC for strategy alpha_history.db — survives pod restarts.
