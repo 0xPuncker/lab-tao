@@ -240,12 +240,21 @@ def main() -> None:
     # Determine effective log level: CLI arg > env var (via config) > default
     log_level_str = args.log_level if args.log_level != "INFO" else config.get("log_level", "INFO").upper()
 
-    # Configure logging
-    logging.basicConfig(
-        level=getattr(logging, log_level_str),
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    # Configure logging — attach a direct handler to strategy namespaces so that
+    # bittensor's later call to logging.basicConfig(WARNING) cannot silence us.
+    _fmt = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
+    _handler = logging.StreamHandler()
+    _handler.setFormatter(_fmt)
+    _level = getattr(logging, log_level_str)
+    logging.basicConfig(level=_level, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
+    for _ns in ("__main__", "strategy"):
+        _log = logging.getLogger(_ns)
+        _log.addHandler(_handler)
+        _log.setLevel(_level)
+        _log.propagate = False
     if args.dry_run:
         config["dry_run"] = True
 
